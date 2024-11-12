@@ -4,7 +4,6 @@ from aiogram import F
 import io
 from aiogram import Router, types
 import app.keyBoards as kb
-
 from . import database
 from .pdf_parser import extract_text_from_pdf, get_line_from_text
 import random
@@ -57,7 +56,6 @@ async def pay_ticket(callback: CallbackQuery):
 @router.callback_query(F.data == "ticket_standard")
 async def ticket_standard_callback(callback: CallbackQuery):
     database.add_or_update_ticket(callback.from_user.id, callback.data, 'Выбран', 'Не оплачен')
-
     await callback.answer(" ")
     await callback.message.delete()
     await callback.message.answer_photo(
@@ -65,12 +63,12 @@ async def ticket_standard_callback(callback: CallbackQuery):
         caption="📝 ***Вы выбрали Танцпол билет***\n"
                 "💵 Стоимость: 690₽\n"
                 "👉 Для оплаты через перевод на карту, выполните следующие шаги:\n"
-                "1. Переведите 690₽ на карту: ВАШ НОМЕР КАРТЫ ***(Сбербанк, ваш банк тоже должен быть Сбербанк)***.\n"
+                "1. Переведите 690₽ на карту: 2200700890454290 ***(Сбербанк, ваш банк тоже должен быть Сбербанк)***.\n"
                 "2. После перевода сохраните чек в формате PDF.\n"
                 "3. Отправьте этот чек боту для подтверждения оплаты.\n"
                 "⚠️ После получения подтверждения, ваш билет будет активирован, "
                 "и вы получите электронный билет на мероприятие.\n"
-                "Если возникнут вопросы, обращайтесь к организаторам через наш чат поддержки ВАШ ТГ АЙДИ.",
+                "Если возникнут вопросы, обращайтесь к организаторам через наш чат поддержки @ВАШ ТГ АЙДИ.",
         parse_mode="Markdown",
         reply_markup=kb.confirm_keyboard
     )
@@ -84,60 +82,42 @@ async def handle_pdf_upload(message: Message):
     file_id = message.document.file_id
     document = await message.bot.get_file(file_id)
     await message.bot.download_file(document.file_path, file_name)
-
     pdf_text = extract_text_from_pdf(file_name)
-
-    line_sum = 17  # Сумма перевода
-    line_name = 7  # ФИО отправителя
+    line_sum = 17
+    line_name = 7
     result_line_sum = get_line_from_text(pdf_text, line_sum)
     result_line_name = get_line_from_text(pdf_text, line_name)
 
-    if result_line_sum.strip() == "690,00 ₽" and result_line_name.strip() == "Имя в чеке сбербанк":
+    if result_line_sum.strip() == "690,00 ₽" and result_line_name.strip() == "ИМЯ ПОЛУЧАТЕЛЯ СБЕРБАНК":
         database.update_payment_status(user_id, "Оплачено")
-
-        # Создаем QR-код
         qr = qrcode.make(
-
             f'{random.randint(1, 1011) * random.randint(10, 10) * random.randint(10, 101)}'
             f'\nТип билета: Танцпол\nСтатус: Оплачено')
-
-        # Сохраняем изображение QR-кода в памяти
-        qr_bytes = io.BytesIO()
-        qr.save(qr_bytes, format='PNG')
-        qr_bytes.seek(0)  # Возвращаемся к началу потока данных
-
-        # Создаем BufferedInputFile для отправки фото из памяти
-        input_file = types.BufferedInputFile(qr_bytes.getvalue(), filename="qr_code.png")
-        await message.answer_photo(photo=input_file)
-
-    elif result_line_sum.strip() == "849,00 ₽" and result_line_name.strip() == "Имя получателя сбербанк":
-        database.update_payment_status(user_id, "Оплачено")
-
-        # Создаем QR-код
-        qr = qrcode.make(
-            f'Уникальный код:{random.randint(1, 1011) * random.randint(10, 10) * random.randint(10, 101)}'
-            f'\nТип билета: Танцпол+\nСтатус: Оплачено')
-
-        # Сохраняем изображение QR-кода в памяти
-        qr_bytes = io.BytesIO()
-        qr.save(qr_bytes, format='PNG')
-        qr_bytes.seek(0)  # Возвращаемся к началу потока данных
-
-        input_file = types.BufferedInputFile(qr_bytes.getvalue(), filename="qr_code.png")
-        await message.answer_photo(photo=input_file)
-
-    elif result_line_sum.strip() == "1390,00 ₽" and result_line_name.strip() == "Имя получателя сбербанк":
-
-        database.update_payment_status(user_id, "Оплачено")
-
-        qr = qrcode.make(
-            f'{random.randint(1, 1011) * random.randint(10, 10) * random.randint(10, 101)}'
-            f'\nТип билета: VIP\nСтатус: Оплачено')
-
         qr_bytes = io.BytesIO()
         qr.save(qr_bytes, format='PNG')
         qr_bytes.seek(0)
+        input_file = types.BufferedInputFile(qr_bytes.getvalue(), filename="qr_code.png")
+        await message.answer_photo(photo=input_file)
 
+    elif result_line_sum.strip() == "849,00 ₽" and result_line_name.strip() == "ИМЯ ПОЛУЧАТЕЛЯ СБЕРБАНК":
+        database.update_payment_status(user_id, "Оплачено")
+        qr = qrcode.make(
+            f'Уникальный код:{random.randint(1, 1011) * random.randint(10, 10) * random.randint(10, 101)}'
+            f'\nТип билета: Танцпол+\nСтатус: Оплачено')
+        qr_bytes = io.BytesIO()
+        qr.save(qr_bytes, format='PNG')
+        qr_bytes.seek(0)
+        input_file = types.BufferedInputFile(qr_bytes.getvalue(), filename="qr_code.png")
+        await message.answer_photo(photo=input_file)
+
+    elif result_line_sum.strip() == "1390,00 ₽" and result_line_name.strip() == "ИМЯ ПОЛУЧАТЕЛЯ СБЕРБАНК":
+        database.update_payment_status(user_id, "Оплачено")
+        qr = qrcode.make(
+            f'{random.randint(1, 1011) * random.randint(10, 10) * random.randint(10, 101)}'
+            f'\nТип билета: VIP\nСтатус: Оплачено')
+        qr_bytes = io.BytesIO()
+        qr.save(qr_bytes, format='PNG')
+        qr_bytes.seek(0)
         input_file = types.BufferedInputFile(qr_bytes.getvalue(), filename="qr_code.png")
         await message.answer_photo(photo=input_file)
 
@@ -155,12 +135,12 @@ async def ticket_plus_callback(callback: CallbackQuery):
         caption="📝 ***Вы выбрали Танцпол+ билет***\n"
                 "💵 Стоимость: 849₽\n"
                 "👉 Для оплаты через перевод на карту, выполните следующие шаги:\n"
-                "1. Переведите 849₽ на карту: ВАШ НОМЕР КАРТЫ ***(Сбербанк, ваш банк тоже должен быть Сбербанк)***.\n"
+                "1. Переведите 849₽ на карту: 2200700890454290 ***(Сбербанк, ваш банк тоже должен быть Сбербанк)***.\n"
                 "2. После перевода сохраните чек в формате PDF.\n"
                 "3. Отправьте этот чек боту для подтверждения оплаты.\n"
                 "⚠️ После получения подтверждения, ваш билет будет активирован, "
                 "и вы получите электронный билет на мероприятие.\n"
-                "Если возникнут вопросы, обращайтесь к организаторам через наш чат поддержки ВАШ ТГ АЙДИ.",
+                "Если возникнут вопросы, обращайтесь к организаторам через наш чат поддержки @ВАШ ТГ АЙДИ.",
         parse_mode="Markdown",
         reply_markup=kb.confirm_keyboard
     )
@@ -176,12 +156,12 @@ async def ticket_vip_callback(callback: CallbackQuery):
         caption="📝 ***Вы выбрали SUPER VIP билет***\n"
                 "💵 Стоимость: 1390₽\n"
                 "👉 Для оплаты через перевод на карту, выполните следующие шаги:\n"
-                "1. Переведите 1390₽ на карту: ВАШ НОМЕР КАРТЫ ***(Сбербанк, ваш банк тоже должен быть Сбербанк)***.\n"
+                "1. Переведите 1390₽ на карту: 2200700890454290 ***(Сбербанк, ваш банк тоже должен быть Сбербанк)***.\n"
                 "2. После перевода сохраните чек в формате PDF.\n"
                 "3. Отправьте этот чек боту для подтверждения оплаты.\n"
                 "⚠️ После получения подтверждения, ваш билет будет активирован, "
                 "и вы получите электронный билет на мероприятие.\n"
-                "Если возникнут вопросы, обращайтесь к организаторам через наш чат поддержки ВАШ ТГ АЙДИ.",
+                "Если возникнут вопросы, обращайтесь к организаторам через наш чат поддержки @ВАШ ТГ АЙДИ.",
         parse_mode="Markdown",
         reply_markup=kb.confirm_keyboard
     )
@@ -210,7 +190,7 @@ async def how_pay(callback: CallbackQuery):
     await callback.answer(" ")
     await callback.message.delete()
     await callback.message.answer(
-        text="1. Переведите XXXX₽ на карту: ВАШ НОМЕР КАРТЫ ***(Сбербанк, ваш банк тоже должен быть Сбербанк)***.\n"
+        text="1. Переведите XXXX₽ на карту: 2200700890454290 ***(Сбербанк, ваш банк тоже должен быть Сбербанк)***.\n"
              "2. После перевода сохраните чек.\n"
              "3. Отправьте этот чек боту для подтверждения оплаты.\n"
              "***⚠️ После получения подтверждения, ваш билет будет активирован,"
@@ -227,6 +207,6 @@ async def help_user(callback: CallbackQuery):
     await callback.message.delete()
     await callback.message.answer(
         text='Если у вас возникли проблемы с ботом.\n'
-             'Напишите нашему администратору ВАШ ТГ АЙДИ.',
+             'Напишите нашему администратору @ВАШ ТГ АЙДИ.',
         reply_markup=kb.cancalls
     )
