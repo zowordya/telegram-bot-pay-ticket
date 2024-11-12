@@ -59,7 +59,6 @@ def update_payment_status(telegram_id, status):
     conn = sqlite3.connect('bot_data.db')
     cursor = conn.cursor()
 
-    # Получаем последний ticket_id для данного telegram_id
     cursor.execute('''
         SELECT ticket_id FROM tickets 
         WHERE telegram_id = ? 
@@ -72,7 +71,6 @@ def update_payment_status(telegram_id, status):
     if last_ticket:
         last_ticket_id = last_ticket[0]
 
-        # Обновляем статус только для последней записи
         cursor.execute(''' 
             UPDATE tickets 
             SET pay_status = ? 
